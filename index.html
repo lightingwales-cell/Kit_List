@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>OB KIT — Equipment Manager v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<style>
+  :root {
+    --bg: #0d0f12;
+    --surface: #161a20;
+    --surface2: #1e242d;
+    --surface3: #252c38;
+    --amber: #f5a623;
+    --amber-dim: #b37518;
+    --green: #39d98a;
+    --red: #ff4d4d;
+    --blue: #4da6ff;
+    --purple: #b06aff;
+    --text: #e8ecf0;
+    --text-dim: #7a8799;
+    --border: #2a3344;
+    --border-bright: #3d4f66;
+    --mono: 'Share Tech Mono', monospace;
+    --display: 'Barlow Condensed', sans-serif;
+    --body: 'Barlow', sans-serif;
+  }
+
+- { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+background: var(–bg);
+color: var(–text);
+font-family: var(–body);
+min-height: 100vh;
+overflow-x: hidden;
+}
+
+/* HEADER */
+.app-header {
+background: var(–surface);
+border-bottom: 2px solid var(–amber);
+padding: 12px 20px;
+display: flex;
+align-items: center;
+justify-content: space-between;
+position: sticky;
+top: 0;
+z-index: 100;
+gap: 12px;
+}
+.app-logo {
+font-family: var(–display);
+font-weight: 900;
+font-size: 28px;
+letter-spacing: 0.05em;
+color: var(–amber);
+line-height: 1;
+}
+.app-logo span {
+color: var(–text-dim);
+font-weight: 400;
+font-size: 13px;
+display: block;
+letter-spacing: 0.2em;
+}
+.header-stats { display: flex; gap: 10px; }
+.stat-chip {
+background: var(–surface2);
+border: 1px solid var(–border);
+border-radius: 4px;
+padding: 4px 10px;
+text-align: center;
+min-width: 52px;
+}
+.stat-chip .val { font-size: 19px; font-family: var(–display); font-weight: 700; }
+.stat-chip .lbl { color: var(–text-dim); font-size: 10px; letter-spacing: 0.08em; font-family: var(–mono); }
+.stat-chip.green .val { color: var(–green); }
+.stat-chip.amber .val { color: var(–amber); }
+
+/* NAV */
+.nav-tabs {
+display: flex;
+background: var(–surface);
+border-bottom: 1px solid var(–border);
+overflow-x: auto;
+scrollbar-width: none;
+}
+.nav-tabs::-webkit-scrollbar { display: none; }
+.nav-tab {
+font-family: var(–display);
+font-weight: 700;
+font-size: 15px;
+letter-spacing: 0.1em;
+text-transform: uppercase;
+padding: 14px 22px;
+cursor: pointer;
+white-space: nowrap;
+border-bottom: 3px solid transparent;
+color: var(–text-dim);
+transition: all 0.15s;
+background: none;
+border-top: none; border-left: none; border-right: none;
+flex-shrink: 0;
+}
+.nav-tab.active { color: var(–amber); border-bottom-color: var(–amber); background: var(–surface2); }
+.nav-tab:hover:not(.active) { color: var(–text); }
+
+/* MAIN */
+.main { padding: 20px; max-width: 1024px; margin: 0 auto; }
+.view { display: none; }
+.view.active { display: block; }
+
+/* ── SCAN ── */
+.scan-area {
+background: var(–surface);
+border: 2px solid var(–border);
+border-radius: 8px;
+overflow: hidden;
+margin-bottom: 20px;
+}
+.scan-header {
+background: var(–surface2);
+border-bottom: 1px solid var(–border);
+padding: 14px 20px;
+font-family: var(–display);
+font-weight: 700;
+font-size: 18px;
+letter-spacing: 0.1em;
+color: var(–amber);
+display: flex;
+align-items: center;
+gap: 10px;
+}
+#video-container {
+position: relative;
+background: #000;
+aspect-ratio: 4/3;
+max-height: 50vh;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+#qr-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.scan-overlay {
+position: absolute; inset: 0;
+display: flex; align-items: center; justify-content: center;
+pointer-events: none;
+}
+.scan-reticle { width: 200px; height: 200px; position: relative; }
+.scan-reticle::before, .scan-reticle::after {
+content: ‘’;
+position: absolute;
+width: 40px; height: 40px;
+border-color: var(–amber); border-style: solid;
+}
+.scan-reticle::before { top: 0; left: 0; border-width: 3px 0 0 3px; }
+.scan-reticle::after { bottom: 0; right: 0; border-width: 0 3px 3px 0; }
+.reticle-tr { position: absolute; top: 0; right: 0; width: 40px; height: 40px; border: solid var(–amber); border-width: 3px 3px 0 0; }
+.reticle-bl { position: absolute; bottom: 0; left: 0; width: 40px; height: 40px; border: solid var(–amber); border-width: 0 0 3px 3px; }
+@keyframes scanline {
+0% { top: 10%; opacity: 1; }
+50% { opacity: 0.5; }
+100% { top: 90%; opacity: 1; }
+}
+.scan-line {
+position: absolute; left: 10%; right: 10%; height: 2px;
+background: linear-gradient(90deg, transparent, var(–amber), transparent);
+animation: scanline 2s ease-in-out infinite;
+box-shadow: 0 0 8px var(–amber);
+}
+.scan-placeholder {
+display: flex; flex-direction: column; align-items: center; justify-content: center;
+padding: 60px 20px; gap: 16px; color: var(–text-dim); text-align: center;
+}
+.scan-placeholder .big-icon { font-size: 64px; opacity: 0.3; }
+.scan-placeholder p { font-family: var(–display); font-size: 18px; }
+.scan-controls {
+padding: 16px 20px;
+display: flex; gap: 12px;
+border-top: 1px solid var(–border);
+}
+
+/* ── BUTTONS ── */
+.btn {
+font-family: var(–display);
+font-weight: 700;
+font-size: 16px;
+letter-spacing: 0.1em;
+text-transform: uppercase;
+padding: 14px 22px;
+border-radius: 6px;
+border: none;
+cursor: pointer;
+transition: all 0.15s;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 8px;
+flex: 1;
+white-space: nowrap;
+}
+.btn-primary { background: var(–amber); color: #000; }
+.btn-primary:hover { background: #f7b84b; }
+.btn-secondary { background: var(–surface2); color: var(–text); border: 1px solid var(–border); flex: none; }
+.btn-secondary:hover { border-color: var(–amber); color: var(–amber); }
+.btn-danger { background: var(–red); color: #fff; flex: none; }
+.btn-success { background: var(–green); color: #000; }
+.btn-purple { background: var(–purple); color: #fff; }
+.btn-sm { padding: 8px 14px; font-size: 13px; flex: none; }
+
+/* ── SCAN RESULT ── */
+.scan-result {
+background: var(–surface);
+border: 2px solid var(–border);
+border-radius: 8px;
+margin-bottom: 20px;
+overflow: hidden;
+display: none;
+}
+.scan-result.visible { display: block; animation: slideIn 0.2s ease; }
+@keyframes slideIn {
+from { opacity: 0; transform: translateY(8px); }
+to { opacity: 1; transform: translateY(0); }
+}
+.result-header {
+padding: 12px 20px;
+font-family: var(–display); font-weight: 700; font-size: 16px; letter-spacing: 0.1em;
+background: var(–surface3);
+border-bottom: 1px solid var(–border);
+display: flex; align-items: center; gap: 8px;
+}
+.result-body { padding: 20px; }
+.result-name { font-family: var(–display); font-weight: 900; font-size: 28px; margin-bottom: 4px; }
+.result-id { font-family: var(–mono); color: var(–text-dim); font-size: 13px; margin-bottom: 12px; }
+.result-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.result-accessories { margin-bottom: 16px; }
+.result-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ── MANUAL INPUT ── */
+.manual-input-bar { display: flex; gap: 10px; margin-bottom: 20px; }
+.input-field {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 6px;
+padding: 12px 16px;
+color: var(–text);
+font-family: var(–mono);
+font-size: 15px;
+flex: 1;
+outline: none;
+transition: border-color 0.15s;
+}
+.input-field:focus { border-color: var(–amber); }
+.input-field::placeholder { color: var(–text-dim); }
+
+/* ── BADGES ── */
+.badge {
+font-family: var(–mono);
+font-size: 11px;
+padding: 4px 10px;
+border-radius: 3px;
+text-transform: uppercase;
+letter-spacing: 0.08em;
+}
+.badge-green { background: rgba(57,217,138,0.15); color: var(–green); border: 1px solid rgba(57,217,138,0.3); }
+.badge-red { background: rgba(255,77,77,0.15); color: var(–red); border: 1px solid rgba(255,77,77,0.3); }
+.badge-amber { background: rgba(245,166,35,0.15); color: var(–amber); border: 1px solid rgba(245,166,35,0.3); }
+.badge-blue { background: rgba(77,166,255,0.15); color: var(–blue); border: 1px solid rgba(77,166,255,0.3); }
+.badge-purple { background: rgba(176,106,255,0.15); color: var(–purple); border: 1px solid rgba(176,106,255,0.3); }
+.badge-dim { background: var(–surface3); color: var(–text-dim); border: 1px solid var(–border); }
+
+/* ── INVENTORY ── */
+.section-title {
+font-family: var(–display);
+font-weight: 700;
+font-size: 20px;
+letter-spacing: 0.1em;
+color: var(–amber);
+margin-bottom: 16px;
+display: flex; align-items: center; justify-content: space-between; gap: 12px;
+flex-wrap: wrap;
+}
+.filter-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.filter-btn {
+font-family: var(–mono); font-size: 12px;
+padding: 6px 14px; border-radius: 3px;
+border: 1px solid var(–border);
+background: var(–surface); color: var(–text-dim);
+cursor: pointer; letter-spacing: 0.08em; text-transform: uppercase;
+transition: all 0.15s;
+}
+.filter-btn.active, .filter-btn:hover { border-color: var(–amber); color: var(–amber); background: rgba(245,166,35,0.08); }
+.equipment-grid { display: grid; gap: 10px; }
+
+/* ── KIT CARD ── */
+.kit-card {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 6px;
+overflow: hidden;
+transition: border-color 0.15s;
+}
+.kit-card:hover { border-color: var(–border-bright); }
+.kit-card.expanded { border-color: var(–amber); }
+.kit-card-header {
+display: grid;
+grid-template-columns: auto 1fr auto auto auto;
+align-items: center;
+gap: 12px;
+padding: 14px 16px;
+cursor: pointer;
+}
+.kit-id {
+font-family: var(–mono); font-size: 12px; color: var(–text-dim);
+background: var(–surface2); padding: 3px 8px; border-radius: 3px; white-space: nowrap;
+}
+.kit-name { font-family: var(–display); font-weight: 700; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kit-qty { font-family: var(–mono); font-size: 13px; color: var(–text-dim); white-space: nowrap; }
+.kit-expand-icon { font-size: 18px; color: var(–text-dim); transition: transform 0.2s; user-select: none; }
+.kit-card.expanded .kit-expand-icon { transform: rotate(180deg); }
+
+.kit-card-detail {
+border-top: 1px solid var(–border);
+padding: 18px;
+display: none;
+background: var(–surface2);
+}
+.kit-card.expanded .kit-card-detail { display: block; }
+
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+.detail-field label {
+font-family: var(–mono); font-size: 10px; color: var(–text-dim);
+text-transform: uppercase; letter-spacing: 0.15em; display: block; margin-bottom: 4px;
+}
+.detail-field .val { font-size: 15px; font-family: var(–display); font-weight: 600; }
+
+.status-select {
+background: var(–surface); border: 1px solid var(–border); border-radius: 4px;
+padding: 8px 12px; color: var(–text); font-family: var(–mono); font-size: 13px;
+outline: none; width: 100%;
+}
+
+.detail-toggles { display: flex; gap: 16px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+.toggle-row { display: flex; align-items: center; gap: 10px; font-family: var(–display); font-weight: 600; font-size: 15px; }
+
+/* ── PAT 3-STATE ── */
+.pat-cycle {
+display: inline-flex;
+border-radius: 4px;
+overflow: hidden;
+border: 1px solid var(–border);
+font-family: var(–mono);
+font-size: 11px;
+}
+.pat-option {
+padding: 5px 10px;
+cursor: pointer;
+background: var(–surface3);
+color: var(–text-dim);
+border: none;
+transition: all 0.15s;
+letter-spacing: 0.05em;
+}
+.pat-option + .pat-option { border-left: 1px solid var(–border); }
+.pat-option.active-tested { background: rgba(57,217,138,0.2); color: var(–green); }
+.pat-option.active-no { background: rgba(255,77,77,0.2); color: var(–red); }
+.pat-option.active-na { background: rgba(122,135,153,0.2); color: var(–text-dim); }
+
+/* ── TOGGLE BUTTON ── */
+.toggle-btn {
+width: 52px; height: 28px; border-radius: 14px; border: none; cursor: pointer;
+position: relative; transition: background 0.2s; flex-shrink: 0;
+}
+.toggle-btn::after {
+content: ‘’; position: absolute; width: 22px; height: 22px; border-radius: 50%;
+background: #fff; top: 3px; left: 3px; transition: transform 0.2s;
+box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+}
+.toggle-btn.on { background: var(–green); }
+.toggle-btn.on::after { transform: translateX(24px); }
+.toggle-btn.off { background: var(–surface3); }
+
+.detail-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+
+/* ── ACCESSORIES ── */
+.accessories-section {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 6px;
+padding: 14px;
+margin-bottom: 14px;
+}
+.accessories-header {
+font-family: var(–display); font-weight: 700; font-size: 15px; letter-spacing: 0.08em;
+color: var(–text-dim);
+display: flex; align-items: center; justify-content: space-between;
+margin-bottom: 10px;
+}
+.acc-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; min-height: 10px; }
+.acc-tag {
+display: inline-flex; align-items: center; gap: 6px;
+background: var(–surface3); border: 1px solid var(–border-bright);
+border-radius: 20px; padding: 4px 12px 4px 14px;
+font-family: var(–mono); font-size: 12px; color: var(–text);
+}
+.acc-tag.checked { background: rgba(57,217,138,0.12); border-color: rgba(57,217,138,0.4); color: var(–green); }
+.acc-tag.checked .acc-remove { color: var(–green); }
+.acc-remove {
+background: none; border: none; cursor: pointer;
+color: var(–text-dim); font-size: 14px; line-height: 1; padding: 0;
+transition: color 0.15s;
+}
+.acc-remove:hover { color: var(–red); }
+.acc-input-row { display: flex; gap: 8px; }
+.acc-input {
+flex: 1; background: var(–surface2); border: 1px solid var(–border);
+border-radius: 4px; padding: 7px 12px; color: var(–text);
+font-family: var(–mono); font-size: 13px; outline: none;
+}
+.acc-input:focus { border-color: var(–amber); }
+.acc-input::placeholder { color: var(–text-dim); }
+.acc-add-btn {
+background: var(–surface3); border: 1px solid var(–border-bright);
+border-radius: 4px; padding: 7px 14px;
+font-family: var(–display); font-weight: 700; font-size: 13px; letter-spacing: 0.05em;
+color: var(–amber); cursor: pointer; white-space: nowrap;
+transition: all 0.15s;
+}
+.acc-add-btn:hover { background: rgba(245,166,35,0.12); }
+.acc-empty { font-family: var(–mono); font-size: 12px; color: var(–text-dim); }
+
+/* ── ADD FORM ── */
+.add-form {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 8px;
+padding: 24px;
+margin-bottom: 20px;
+}
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.form-field { display: flex; flex-direction: column; gap: 6px; }
+.form-field.full { grid-column: 1 / -1; }
+.form-label { font-family: var(–mono); font-size: 11px; color: var(–text-dim); text-transform: uppercase; letter-spacing: 0.15em; }
+.form-row { display: flex; gap: 16px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+
+/* ── QR GRID ── */
+.qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; }
+.qr-card {
+background: var(–surface); border: 1px solid var(–border);
+border-radius: 8px; padding: 18px;
+text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.qr-canvas { background: #fff; padding: 8px; border-radius: 4px; display: inline-flex; }
+.qr-card-name { font-family: var(–display); font-weight: 700; font-size: 15px; }
+.qr-card-id { font-family: var(–mono); font-size: 11px; color: var(–text-dim); }
+.qr-card-btns { display: flex; gap: 6px; width: 100%; }
+
+/* ── CHECKLIST ── */
+.checklist-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+.summary-card { background: var(–surface); border: 1px solid var(–border); border-radius: 6px; padding: 16px; text-align: center; }
+.summary-card .big-num { font-family: var(–display); font-weight: 900; font-size: 42px; line-height: 1; margin-bottom: 4px; }
+.summary-card .lbl { font-family: var(–mono); font-size: 11px; color: var(–text-dim); text-transform: uppercase; letter-spacing: 0.1em; }
+.checklist-item {
+background: var(–surface); border: 1px solid var(–border);
+border-radius: 6px; padding: 14px 16px;
+display: flex; align-items: center; gap: 14px; margin-bottom: 10px;
+transition: border-color 0.15s;
+}
+.checklist-item.loaded { border-color: var(–green); background: rgba(57,217,138,0.03); }
+.checklist-item.not-loaded { border-left: 4px solid var(–red); }
+.check-status-icon { font-size: 26px; flex-shrink: 0; }
+.check-info { flex: 1; min-width: 0; }
+.check-name { font-family: var(–display); font-weight: 700; font-size: 18px; margin-bottom: 2px; }
+.check-meta { font-family: var(–mono); font-size: 12px; color: var(–text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.check-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+/* ── MODAL ── */
+.modal-overlay {
+position: fixed; inset: 0;
+background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);
+z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.modal-overlay.hidden { display: none; }
+.modal {
+background: var(–surface); border: 1px solid var(–border-bright);
+border-radius: 10px; width: 100%; max-width: 500px; overflow: hidden;
+animation: slideIn 0.2s ease;
+}
+.modal-header {
+background: var(–surface2); border-bottom: 1px solid var(–border);
+padding: 18px 20px;
+display: flex; align-items: center; justify-content: space-between;
+font-family: var(–display); font-weight: 700; font-size: 20px; letter-spacing: 0.08em; color: var(–amber);
+}
+.modal-close { background: none; border: none; color: var(–text-dim); font-size: 24px; cursor: pointer; line-height: 1; }
+.modal-body { padding: 20px; }
+.modal-actions { padding: 16px 20px; border-top: 1px solid var(–border); display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ── QR EXPORT HELP ── */
+.qr-export-tip {
+font-family: var(–mono); font-size: 12px; color: var(–text-dim);
+text-align: center; padding: 8px 12px;
+background: var(–surface2); border-radius: 4px; margin-top: 8px;
+line-height: 1.5;
+}
+
+/* ── TOAST ── */
+.toast-container {
+position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+z-index: 1000; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none;
+}
+.toast {
+font-family: var(–display); font-weight: 700; font-size: 16px; letter-spacing: 0.05em;
+padding: 14px 24px; border-radius: 6px; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+animation: toastIn 0.2s ease;
+display: flex; align-items: center; gap: 10px;
+}
+.toast-success { background: var(–green); color: #000; }
+.toast-error { background: var(–red); color: #fff; }
+.toast-info { background: var(–amber); color: #000; }
+@keyframes toastIn {
+from { opacity: 0; transform: translateY(10px); }
+to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── EMPTY ── */
+.empty-state { text-align: center; padding: 60px 20px; color: var(–text-dim); }
+.empty-state .icon { font-size: 48px; opacity: 0.3; margin-bottom: 12px; }
+.empty-state p { font-family: var(–display); font-size: 20px; }
+
+/* RESPONSIVE */
+@media (max-width: 600px) {
+.form-grid { grid-template-columns: 1fr; }
+.detail-grid { grid-template-columns: 1fr; }
+.kit-card-header { grid-template-columns: auto 1fr auto auto; }
+.header-stats { gap: 6px; }
+.stat-chip .val { font-size: 16px; }
+.stat-chip { min-width: 44px; padding: 4px 7px; }
+}
+</style>
+
+</head>
+<body>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- MODAL -->
+
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span id="modalTitle">QR Code</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-actions" id="modalActions"></div>
+  </div>
+</div>
+
+<!-- HEADER -->
+
+<header class="app-header">
+  <div class="app-logo">
+    OB KIT <span>EQUIPMENT MANAGER v2</span>
+  </div>
+  <div class="header-stats">
+    <div class="stat-chip green"><div class="val" id="statTotal">0</div><div class="lbl">Items</div></div>
+    <div class="stat-chip amber"><div class="val" id="statLoaded">0</div><div class="lbl">Loaded</div></div>
+    <div class="stat-chip green"><div class="val" id="statPAT">0</div><div class="lbl">PAT OK</div></div>
+  </div>
+</header>
+
+<!-- NAV -->
+
+<nav class="nav-tabs">
+  <button class="nav-tab active" onclick="switchView('scan',this)">📷 SCAN</button>
+  <button class="nav-tab" onclick="switchView('inventory',this)">📦 INVENTORY</button>
+  <button class="nav-tab" onclick="switchView('checklist',this)">✅ CHECKLIST</button>
+  <button class="nav-tab" onclick="switchView('qrcodes',this)">QR CODES</button>
+  <button class="nav-tab" onclick="switchView('add',this)">+ ADD ITEM</button>
+</nav>
+
+<main class="main">
+
+  <!-- ── SCAN ── -->
+
+  <div class="view active" id="view-scan">
+    <div class="scan-area">
+      <div class="scan-header">📷 QR CODE SCANNER</div>
+      <div id="video-container">
+        <div class="scan-placeholder" id="scanPlaceholder">
+          <div class="big-icon">⬛</div>
+          <p>Camera not active</p>
+          <small style="color:var(--text-dim);font-size:13px">Press START SCAN to activate camera</small>
+        </div>
+        <video id="qr-video" autoplay playsinline style="display:none;"></video>
+        <div class="scan-overlay" id="scanOverlay" style="display:none;">
+          <div class="scan-reticle">
+            <div class="reticle-tr"></div>
+            <div class="reticle-bl"></div>
+            <div class="scan-line"></div>
+          </div>
+        </div>
+        <canvas id="qr-canvas" style="display:none;"></canvas>
+      </div>
+      <div class="scan-controls">
+        <button class="btn btn-primary" id="scanBtn" onclick="startScan()">▶ START SCAN</button>
+        <button class="btn btn-secondary" id="stopBtn" onclick="stopScan()" style="display:none;">■ STOP</button>
+      </div>
+    </div>
+    <div class="manual-input-bar">
+      <input type="text" class="input-field" id="manualId" placeholder="Type Asset ID manually…" onkeydown="if(event.key==='Enter')lookupManual()">
+      <button class="btn btn-secondary btn-sm" onclick="lookupManual()">LOOK UP</button>
+    </div>
+    <div class="scan-result" id="scanResult">
+      <div class="result-header"><span id="resultIcon">📦</span> SCANNED ITEM</div>
+      <div class="result-body">
+        <div class="result-name" id="resultName">—</div>
+        <div class="result-id" id="resultId">ASSET ID: —</div>
+        <div class="result-badges" id="resultBadges"></div>
+        <div class="result-accessories" id="resultAccessories"></div>
+        <div class="result-actions" id="resultActions"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── INVENTORY ── -->
+
+  <div class="view" id="view-inventory">
+    <div class="section-title">
+      EQUIPMENT INVENTORY
+      <input type="text" class="input-field" style="max-width:220px;font-size:13px;padding:8px 12px;" placeholder="Search…" id="searchInput" oninput="renderInventory()">
+    </div>
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="setFilter('ALL',this)">ALL</button>
+      <button class="filter-btn" onclick="setFilter('AVAILABLE',this)">AVAILABLE</button>
+      <button class="filter-btn" onclick="setFilter('IN_USE',this)">IN USE</button>
+      <button class="filter-btn" onclick="setFilter('CHECKED_OUT',this)">CHECKED OUT</button>
+      <button class="filter-btn" onclick="setFilter('MAINTENANCE',this)">MAINTENANCE</button>
+    </div>
+    <div class="equipment-grid" id="equipmentGrid"></div>
+  </div>
+
+  <!-- ── CHECKLIST ── -->
+
+  <div class="view" id="view-checklist">
+    <div class="section-title">VAN LOADING CHECKLIST</div>
+    <div class="checklist-summary">
+      <div class="summary-card"><div class="big-num" id="clTotal" style="color:var(--blue)">0</div><div class="lbl">Total</div></div>
+      <div class="summary-card"><div class="big-num" id="clLoaded" style="color:var(--green)">0</div><div class="lbl">Loaded ✓</div></div>
+      <div class="summary-card"><div class="big-num" id="clUnloaded" style="color:var(--red)">0</div><div class="lbl">Missing ✗</div></div>
+    </div>
+    <div id="checklistItems"></div>
+  </div>
+
+  <!-- ── QR CODES ── -->
+
+  <div class="view" id="view-qrcodes">
+    <div class="section-title">QR CODES</div>
+    <div class="qr-grid" id="qrGrid"></div>
+  </div>
+
+  <!-- ── ADD ITEM ── -->
+
+  <div class="view" id="view-add">
+    <div class="section-title">ADD NEW EQUIPMENT</div>
+    <div class="add-form">
+      <div class="form-grid">
+        <div class="form-field">
+          <label class="form-label">Asset ID *</label>
+          <input type="text" class="input-field" id="f_assetId" placeholder="e.g. CAM-001">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Quantity</label>
+          <input type="number" class="input-field" id="f_qty" value="1" min="1">
+        </div>
+        <div class="form-field full">
+          <label class="form-label">Kit Item Name *</label>
+          <input type="text" class="input-field" id="f_name" placeholder="e.g. Sony FX9 Camera Body">
+        </div>
+        <div class="form-field full">
+          <label class="form-label">Description / Notes</label>
+          <input type="text" class="input-field" id="f_desc" placeholder="Optional details…">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Status</label>
+          <select class="input-field status-select" id="f_status">
+            <option value="AVAILABLE">Available</option>
+            <option value="IN_USE">In Use</option>
+            <option value="CHECKED_OUT">Checked Out</option>
+            <option value="MAINTENANCE">Maintenance</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">PAT Testing</label>
+          <div class="pat-cycle" style="align-self:flex-start">
+            <button class="pat-option" id="fp_tested" onclick="setFormPAT('tested')">✓ TESTED</button>
+            <button class="pat-option" id="fp_no" onclick="setFormPAT('no')">✗ NO</button>
+            <button class="pat-option active-na" id="fp_na" onclick="setFormPAT('na')">N/A</button>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="toggle-row">
+          <label class="form-label" style="margin:0">KIT LOADED</label>
+          <button class="toggle-btn off" id="f_loaded" onclick="toggleFormLoaded()"></button>
+          <span id="f_loaded_lbl" style="font-family:var(--mono);font-size:13px;color:var(--text-dim)">NO</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-primary" onclick="addItem()">+ ADD TO INVENTORY</button>
+        <button class="btn btn-secondary" onclick="clearForm()">CLEAR</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let equipment = JSON.parse(localStorage.getItem('ob_kit_equipment_v2') || 'null');
+let activeFilter = 'ALL';
+let scanInterval = null;
+let videoStream = null;
+let formLoaded = false;
+let formPATState = 'na'; // 'tested' | 'no' | 'na'
+
+// Migrate v1 data if present
+if (!equipment) {
+  const v1 = localStorage.getItem('ob_kit_equipment');
+  if (v1) {
+    try {
+      const old = JSON.parse(v1);
+      equipment = old.map(e => ({
+        ...e,
+        patState: e.tested ? 'tested' : 'no',
+        accessories: [],
+      }));
+      toast('Migrated data from v1 ✓', 'success');
+    } catch(e) {}
+  }
+}
+
+// Seed demo data if empty
+if (!equipment || equipment.length === 0) {
+  equipment = [
+    { id:'CAM-001', name:'Sony FX9 Camera Body', desc:'Main broadcast camera', qty:1, status:'AVAILABLE', loaded:true, patState:'tested', accessories:['Battery (BP-U90)','Rain Cover','Handle Grip'], date:new Date().toISOString() },
+    { id:'CAM-002', name:'Sony FX9 Camera Body', desc:'Backup camera', qty:1, status:'AVAILABLE', loaded:false, patState:'tested', accessories:['Battery (BP-U90)'], date:new Date().toISOString() },
+    { id:'LNS-001', name:'Canon EF 70-200mm f/2.8L', desc:'Telephoto zoom lens', qty:2, status:'AVAILABLE', loaded:true, patState:'na', accessories:['Front Cap','Rear Cap','Lens Hood ET-87'], date:new Date().toISOString() },
+    { id:'LGT-001', name:'Gemini 2x1 Litepanel', desc:'Bi-colour LED panel', qty:1, status:'AVAILABLE', loaded:false, patState:'tested', accessories:['Barn Doors','Honeycomb Grid','Softbox Diffuser','Yoke Mount'], date:new Date().toISOString() },
+    { id:'AUD-001', name:'Sennheiser MKH 416', desc:'Shotgun dialogue mic', qty:3, status:'AVAILABLE', loaded:true, patState:'tested', accessories:['Blimp Windshield','Pistol Grip','XLR Cable 5m'], date:new Date().toISOString() },
+    { id:'MON-001', name:'SmallHD 702 Touch', desc:'7" field monitor', qty:2, status:'IN_USE', loaded:true, patState:'tested', accessories:['Sun Hood','Mounting Arm','V-Mount Plate'], date:new Date().toISOString() },
+    { id:'TRP-001', name:'Sachtler Ace XL Tripod', desc:'Camera support system', qty:2, status:'AVAILABLE', loaded:true, patState:'na', accessories:['Mid-Level Spreader','Carry Bag'], date:new Date().toISOString() },
+    { id:'CLM-001', name:'Super Clamp Set', desc:'Rigging clamps', qty:8, status:'AVAILABLE', loaded:false, patState:'na', accessories:[], date:new Date().toISOString() },
+    { id:'CBL-001', name:'SDI BNC Cable 10m', desc:'Video signal cable', qty:10, status:'AVAILABLE', loaded:false, patState:'na', accessories:[], date:new Date().toISOString() },
+  ];
+  saveData();
+}
+
+function saveData() {
+  localStorage.setItem('ob_kit_equipment_v2', JSON.stringify(equipment));
+  updateStats();
+}
+
+// ─── VIEWS ────────────────────────────────────────────────────────────────────
+function switchView(name, btn) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (name === 'inventory') renderInventory();
+  if (name === 'checklist') renderChecklist();
+  if (name === 'qrcodes') renderQRCodes();
+  if (name !== 'scan') stopScan();
+}
+
+// ─── STATS ────────────────────────────────────────────────────────────────────
+function updateStats() {
+  document.getElementById('statTotal').textContent = equipment.length;
+  document.getElementById('statLoaded').textContent = equipment.filter(e => e.loaded).length;
+  document.getElementById('statPAT').textContent = equipment.filter(e => e.patState === 'tested').length;
+}
+
+// ─── PAT HELPERS ─────────────────────────────────────────────────────────────
+function patBadge(state) {
+  if (state === 'tested') return '<span class="badge badge-green">✓ PAT TESTED</span>';
+  if (state === 'no')     return '<span class="badge badge-red">✗ NOT PAT TESTED</span>';
+  return '<span class="badge badge-dim">N/A – NON-ELECTRIC</span>';
+}
+
+function patCycleHTML(idx, state) {
+  return `<div class="pat-cycle" onclick="event.stopPropagation()">
+    <button class="pat-option ${state==='tested'?'active-tested':''}" onclick="setPAT(${idx},'tested')">✓ TESTED</button>
+    <button class="pat-option ${state==='no'?'active-no':''}" onclick="setPAT(${idx},'no')">✗ NO</button>
+    <button class="pat-option ${state==='na'?'active-na':''}" onclick="setPAT(${idx},'na')">N/A</button>
+  </div>`;
+}
+
+function setPAT(idx, state) {
+  equipment[idx].patState = state;
+  equipment[idx].date = new Date().toISOString();
+  saveData();
+  renderInventory();
+  const labels = { tested: 'PAT: TESTED ✓', no: 'PAT: NOT TESTED ✗', na: 'PAT: N/A' };
+  const types  = { tested: 'success', no: 'error', na: 'info' };
+  toast(labels[state], types[state]);
+}
+
+// ─── SCANNER ─────────────────────────────────────────────────────────────────
+async function startScan() {
+  // Check if getUserMedia is available at all
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    toast('Camera not supported in this browser. Open the file directly in Safari.', 'error');
+    return;
+  }
+
+  try {
+    const constraints = {
+      video: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      },
+      audio: false
+    };
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    videoStream = stream;
+
+    const video = document.getElementById('qr-video');
+    video.srcObject = stream;
+    video.setAttribute('playsinline', true); // Required for iOS Safari
+    video.setAttribute('autoplay', true);
+    video.style.display = 'block';
+
+    document.getElementById('scanPlaceholder').style.display = 'none';
+    document.getElementById('scanOverlay').style.display = 'flex';
+    document.getElementById('scanBtn').style.display = 'none';
+    document.getElementById('stopBtn').style.display = 'flex';
+
+    // Wait for video to be ready then start scanning with jsQR
+    video.addEventListener('loadedmetadata', () => {
+      video.play();
+      startJsQRLoop(video);
+    }, { once: true });
+
+    // Fallback if loadedmetadata already fired
+    if (video.readyState >= 2) {
+      video.play();
+      startJsQRLoop(video);
+    }
+
+  } catch(e) {
+    console.error('Camera error:', e);
+    if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
+      toast('Camera permission denied. In Safari: Settings → Safari → Camera → Allow', 'error');
+    } else if (e.name === 'NotFoundError') {
+      toast('No camera found on this device', 'error');
+    } else {
+      toast('Camera error: ' + e.message, 'error');
+    }
+  }
+}
+
+function startJsQRLoop(video) {
+  // jsQR works in ALL browsers — no BarcodeDetector needed
+  const canvas = document.getElementById('qr-canvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  let lastResult = null;
+  let lastResultTime = 0;
+
+  scanInterval = setInterval(() => {
+    if (!videoStream) return;
+    if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
+    if (video.videoWidth === 0) return;
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+      inversionAttempts: 'dontInvert'
+    });
+
+    if (code && code.data) {
+      const now = Date.now();
+      // Debounce — don't fire same code twice within 3 seconds
+      if (code.data !== lastResult || now - lastResultTime > 3000) {
+        lastResult = code.data;
+        lastResultTime = now;
+        handleScan(code.data);
+      }
+    }
+  }, 200);
+}
+
+function stopScan() {
+  if (videoStream) { videoStream.getTracks().forEach(t => t.stop()); videoStream = null; }
+  if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
+  const video = document.getElementById('qr-video');
+  video.style.display = 'none';
+  video.srcObject = null;
+  document.getElementById('scanPlaceholder').style.display = 'flex';
+  document.getElementById('scanOverlay').style.display = 'none';
+  document.getElementById('scanBtn').style.display = 'flex';
+  document.getElementById('stopBtn').style.display = 'none';
+}
+
+function lookupManual() {
+  const id = document.getElementById('manualId').value.trim().toUpperCase();
+  if (!id) return;
+  handleScan(id);
+  document.getElementById('manualId').value = '';
+}
+
+function handleScan(id) {
+  const item = equipment.find(e => e.id.toUpperCase() === id.toUpperCase());
+  const result = document.getElementById('scanResult');
+  result.classList.add('visible');
+
+  if (!item) {
+    document.getElementById('resultName').textContent = 'Item Not Found';
+    document.getElementById('resultId').textContent = 'ASSET ID: ' + id;
+    document.getElementById('resultBadges').innerHTML = '<span class="badge badge-red">UNKNOWN ASSET</span>';
+    document.getElementById('resultAccessories').innerHTML = '';
+    document.getElementById('resultActions').innerHTML = `<button class="btn btn-secondary btn-sm" onclick="switchView('add',document.querySelectorAll('.nav-tab')[4]);document.getElementById('f_assetId').value='${id}'">+ ADD THIS ID</button>`;
+    toast('Asset not found: ' + id, 'error');
+    return;
+  }
+
+  const idx = equipment.indexOf(item);
+  document.getElementById('resultName').textContent = item.name;
+  document.getElementById('resultId').textContent = `ASSET ID: ${item.id}  ·  QTY: ${item.qty}`;
+
+  const statusBadges = { AVAILABLE:'badge-green', IN_USE:'badge-blue', CHECKED_OUT:'badge-amber', MAINTENANCE:'badge-red' };
+  let badges = `<span class="badge ${statusBadges[item.status]}">${item.status.replace('_',' ')}</span>`;
+  badges += patBadge(item.patState);
+  badges += `<span class="badge ${item.loaded?'badge-green':'badge-amber'}">${item.loaded?'✓ LOADED':'✗ NOT LOADED'}</span>`;
+  document.getElementById('resultBadges').innerHTML = badges;
+
+  // Accessories mini-display
+  if (item.accessories && item.accessories.length > 0) {
+    document.getElementById('resultAccessories').innerHTML = `
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-bottom:6px;letter-spacing:0.1em;text-transform:uppercase">Accessories</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">${item.accessories.map(a=>`<span class="badge badge-dim">${a}</span>`).join('')}</div>`;
+  } else {
+    document.getElementById('resultAccessories').innerHTML = '';
+  }
+
+  let actions = '';
+  if (item.status === 'AVAILABLE') {
+    actions += `<button class="btn btn-primary btn-sm" onclick="quickCheckout(${idx})">CHECK OUT</button>`;
+  } else if (item.status === 'CHECKED_OUT' || item.status === 'IN_USE') {
+    actions += `<button class="btn btn-success btn-sm" onclick="quickCheckin(${idx})">CHECK IN</button>`;
+  }
+  actions += `<button class="btn btn-secondary btn-sm" onclick="toggleLoaded(${idx},true)">TOGGLE LOADED</button>`;
+  actions += `<button class="btn btn-secondary btn-sm" onclick="showQRModal(${idx})">QR CODE</button>`;
+  document.getElementById('resultActions').innerHTML = actions;
+
+  toast('Found: ' + item.name, 'success');
+}
+
+function quickCheckout(idx) {
+  equipment[idx].status = 'CHECKED_OUT';
+  equipment[idx].date = new Date().toISOString();
+  saveData();
+  handleScan(equipment[idx].id);
+  toast('Checked out: ' + equipment[idx].name, 'info');
+}
+
+function quickCheckin(idx) {
+  equipment[idx].status = 'AVAILABLE';
+  equipment[idx].date = new Date().toISOString();
+  saveData();
+  handleScan(equipment[idx].id);
+  toast('Checked in: ' + equipment[idx].name, 'success');
+}
+
+// ─── INVENTORY ────────────────────────────────────────────────────────────────
+function setFilter(filter, btn) {
+  activeFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderInventory();
+}
+
+function renderInventory() {
+  const search = (document.getElementById('searchInput')?.value || '').toLowerCase();
+  let items = equipment;
+  if (activeFilter !== 'ALL') items = items.filter(e => e.status === activeFilter);
+  if (search) items = items.filter(e =>
+    e.name.toLowerCase().includes(search) ||
+    e.id.toLowerCase().includes(search) ||
+    (e.desc||'').toLowerCase().includes(search) ||
+    (e.accessories||[]).some(a => a.toLowerCase().includes(search))
+  );
+
+  const grid = document.getElementById('equipmentGrid');
+  if (items.length === 0) {
+    grid.innerHTML = '<div class="empty-state"><div class="icon">📦</div><p>No equipment found</p></div>';
+    return;
+  }
+
+  const statusLabels = { AVAILABLE:'badge-green', IN_USE:'badge-blue', CHECKED_OUT:'badge-amber', MAINTENANCE:'badge-red' };
+  const d = (item) => new Date(item.date);
+
+  grid.innerHTML = items.map(item => {
+    const idx = equipment.indexOf(item);
+    const dt = d(item);
+    const accs = item.accessories || [];
+    return `
+    <div class="kit-card" id="card-${idx}">
+      <div class="kit-card-header" onclick="toggleCard(${idx})">
+        <span class="kit-id">${item.id}</span>
+        <span class="kit-name">${item.name}</span>
+        <span class="kit-qty">×${item.qty}</span>
+        <span class="badge ${statusLabels[item.status]}">${item.status.replace('_',' ')}</span>
+        <span class="kit-expand-icon">⌄</span>
+      </div>
+      <div class="kit-card-detail">
+        <div class="detail-grid">
+          <div class="detail-field">
+            <label>Description</label>
+            <div class="val">${item.desc || '—'}</div>
+          </div>
+          <div class="detail-field">
+            <label>Last Updated</label>
+            <div class="val" style="font-size:13px">${dt.toLocaleDateString()} ${dt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+          </div>
+        </div>
+
+        <div class="detail-field" style="margin-bottom:14px" onclick="event.stopPropagation()">
+          <label>Status</label>
+          <select class="status-select" style="max-width:220px" onchange="updateStatus(${idx},this.value)">
+            <option value="AVAILABLE" ${item.status==='AVAILABLE'?'selected':''}>Available</option>
+            <option value="IN_USE" ${item.status==='IN_USE'?'selected':''}>In Use</option>
+            <option value="CHECKED_OUT" ${item.status==='CHECKED_OUT'?'selected':''}>Checked Out</option>
+            <option value="MAINTENANCE" ${item.status==='MAINTENANCE'?'selected':''}>Maintenance</option>
+          </select>
+        </div>
+
+        <div class="detail-field" style="margin-bottom:14px" onclick="event.stopPropagation()">
+          <label>PAT Testing</label>
+          ${patCycleHTML(idx, item.patState)}
+        </div>
+
+        <div class="detail-toggles" onclick="event.stopPropagation()">
+          <div class="toggle-row">
+            <span>KIT LOADED</span>
+            <button class="toggle-btn ${item.loaded?'on':'off'}" onclick="toggleLoaded(${idx})"></button>
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text-dim)">${item.loaded?'YES':'NO'}</span>
+          </div>
+        </div>
+
+        <!-- ACCESSORIES -->
+        <div class="accessories-section" onclick="event.stopPropagation()">
+          <div class="accessories-header">
+            <span>ACCESSORIES <span style="color:var(--amber);margin-left:6px">${accs.length > 0 ? '('+accs.length+')' : ''}</span></span>
+          </div>
+          <div class="acc-list" id="accList-${idx}">
+            ${accs.length === 0
+              ? '<span class="acc-empty">No accessories added yet</span>'
+              : accs.map((a,ai) => `<span class="acc-tag">${a}<button class="acc-remove" title="Remove" onclick="removeAccessory(${idx},${ai})">✕</button></span>`).join('')
+            }
+          </div>
+          <div class="acc-input-row">
+            <input type="text" class="acc-input" id="accInput-${idx}" placeholder="Add accessory…" onkeydown="if(event.key==='Enter')addAccessory(${idx})">
+            <button class="acc-add-btn" onclick="addAccessory(${idx})">+ ADD</button>
+          </div>
+        </div>
+
+        <div class="detail-actions" onclick="event.stopPropagation()">
+          <button class="btn btn-secondary btn-sm" onclick="showQRModal(${idx})">QR CODE</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteItem(${idx})">DELETE</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleCard(idx) {
+  document.getElementById('card-' + idx)?.classList.toggle('expanded');
+}
+
+function updateStatus(idx, status) {
+  equipment[idx].status = status;
+  equipment[idx].date = new Date().toISOString();
+  saveData();
+  toast('Status updated', 'success');
+}
+
+function toggleLoaded(idx, rescan) {
+  equipment[idx].loaded = !equipment[idx].loaded;
+  equipment[idx].date = new Date().toISOString();
+  saveData();
+  renderInventory();
+  toast(`Loaded: ${equipment[idx].loaded ? 'YES ✓' : 'NO ✗'}`, equipment[idx].loaded ? 'success' : 'info');
+  if (rescan) handleScan(equipment[idx].id);
+}
+
+function deleteItem(idx) {
+  if (!confirm(`Delete "${equipment[idx].name}"?`)) return;
+  equipment.splice(idx, 1);
+  saveData();
+  renderInventory();
+  toast('Item deleted', 'error');
+}
+
+// ─── ACCESSORIES ─────────────────────────────────────────────────────────────
+function addAccessory(idx) {
+  const input = document.getElementById('accInput-' + idx);
+  const val = input.value.trim();
+  if (!val) return;
+  if (!equipment[idx].accessories) equipment[idx].accessories = [];
+  if (equipment[idx].accessories.includes(val)) {
+    toast('Accessory already listed', 'error');
+    return;
+  }
+  equipment[idx].accessories.push(val);
+  equipment[idx].date = new Date().toISOString();
+  input.value = '';
+  saveData();
+  // Re-render just the accessories list
+  const listEl = document.getElementById('accList-' + idx);
+  if (listEl) {
+    const accs = equipment[idx].accessories;
+    listEl.innerHTML = accs.map((a,ai) => `<span class="acc-tag">${a}<button class="acc-remove" title="Remove" onclick="removeAccessory(${idx},${ai})">✕</button></span>`).join('');
+  }
+  toast('Accessory added', 'success');
+}
+
+function removeAccessory(idx, ai) {
+  equipment[idx].accessories.splice(ai, 1);
+  equipment[idx].date = new Date().toISOString();
+  saveData();
+  const listEl = document.getElementById('accList-' + idx);
+  if (listEl) {
+    const accs = equipment[idx].accessories;
+    listEl.innerHTML = accs.length === 0
+      ? '<span class="acc-empty">No accessories added yet</span>'
+      : accs.map((a,i) => `<span class="acc-tag">${a}<button class="acc-remove" title="Remove" onclick="removeAccessory(${idx},${i})">✕</button></span>`).join('');
+  }
+}
+
+// ─── CHECKLIST ────────────────────────────────────────────────────────────────
+function renderChecklist() {
+  document.getElementById('clTotal').textContent = equipment.length;
+  document.getElementById('clLoaded').textContent = equipment.filter(e => e.loaded).length;
+  document.getElementById('clUnloaded').textContent = equipment.filter(e => !e.loaded).length;
+
+  const sorted = [...equipment].sort((a, b) => {
+    if (a.loaded === b.loaded) return a.name.localeCompare(b.name);
+    return a.loaded ? 1 : -1;
+  });
+
+  const container = document.getElementById('checklistItems');
+  if (sorted.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>No items in inventory</p></div>';
+    return;
+  }
+
+  container.innerHTML = sorted.map(item => {
+    const idx = equipment.indexOf(item);
+    const patWarn = item.patState === 'no' ? '  ⚠️ NOT PAT TESTED' : '';
+    const accsText = (item.accessories||[]).length > 0 ? `  ·  ${(item.accessories).length} accessories` : '';
+    return `
+    <div class="checklist-item ${item.loaded ? 'loaded' : 'not-loaded'}">
+      <span class="check-status-icon">${item.loaded ? '✅' : '⬜'}</span>
+      <div class="check-info">
+        <div class="check-name">${item.name}</div>
+        <div class="check-meta">${item.id} · QTY:${item.qty} · ${item.status.replace('_',' ')}${accsText}${patWarn}</div>
+      </div>
+      <div class="check-actions">
+        <button class="toggle-btn ${item.loaded?'on':'off'}" onclick="toggleLoaded(${idx});renderChecklist()"></button>
+        <button class="btn btn-secondary btn-sm" onclick="showQRModal(${idx})">QR</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── QR CODES ─────────────────────────────────────────────────────────────────
+function renderQRCodes() {
+  const grid = document.getElementById('qrGrid');
+  grid.innerHTML = equipment.map((item, idx) => `
+    <div class="qr-card">
+      <div class="qr-canvas" id="qr-${idx}"></div>
+      <div class="qr-card-name">${item.name}</div>
+      <div class="qr-card-id">${item.id}</div>
+      <div class="qr-card-btns">
+        <button class="btn btn-secondary btn-sm" style="flex:1;font-size:12px" onclick="showQRModal(${idx})">FULL SIZE</button>
+      </div>
+    </div>
+  `).join('');
+
+  equipment.forEach((item, idx) => {
+    setTimeout(() => {
+      const el = document.getElementById('qr-' + idx);
+      if (el && el.children.length === 0) {
+        new QRCode(el, { text: item.id, width: 130, height: 130, colorDark: '#000', colorLight: '#fff' });
+      }
+    }, idx * 30);
+  });
+}
+
+// ─── QR MODAL ─────────────────────────────────────────────────────────────────
+// ── Pre-rendered blob stored here so the share button can fire synchronously ──
+let _qrBlobReady = null;
+
+function showQRModal(idx) {
+  const item = equipment[idx];
+  _qrBlobReady = null;
+
+  document.getElementById('modalTitle').textContent = 'QR — ' + item.id;
+  document.getElementById('modalBody').innerHTML = `
+    <div style="text-align:center;padding:10px 0">
+      <div id="modal-qr" style="display:inline-block;background:#fff;padding:14px;border-radius:8px;margin-bottom:14px;"></div>
+      <div style="font-family:var(--display);font-weight:700;font-size:22px;margin-bottom:2px">${item.name}</div>
+      <div style="font-family:var(--mono);color:var(--text-dim);font-size:14px;margin-bottom:12px">${item.id}</div>
+      <div class="qr-export-tip" id="qrTip">
+        ⏳ Preparing QR image…
+      </div>
+    </div>`;
+
+  document.getElementById('modalActions').innerHTML = `
+    <button class="btn btn-primary" style="flex:1;opacity:0.5" id="btnSave" disabled onclick="triggerShare(${idx})">📸 SAVE TO PHOTOS</button>
+    <button class="btn btn-secondary btn-sm" onclick="closeModal()">CLOSE</button>
+  `;
+
+  document.getElementById('modalOverlay').classList.remove('hidden');
+
+  // Render visible preview QR
+  setTimeout(() => {
+    const el = document.getElementById('modal-qr');
+    if (el) new QRCode(el, { text: item.id, width: 220, height: 220, colorDark: '#000', colorLight: '#fff' });
+  }, 50);
+
+  // Pre-render the full-res blob in the background while the modal is open
+  // By the time the user reads the instructions and taps the button, it will be ready
+  buildQRBlob(item).then(blob => {
+    _qrBlobReady = blob;
+    const btn = document.getElementById('btnSave');
+    const tip = document.getElementById('qrTip');
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+    if (tip) tip.innerHTML = 'Tap <strong style="color:var(--amber)">SAVE TO PHOTOS</strong> to open the iOS Share Sheet &rarr; tap <strong>Save Image</strong> to add to Photos, or send straight to <strong>Niimbot</strong> if it appears in the app list.';
+  });
+}
+
+// ── Build QR as a File blob (canvas→canvas, no taint) ──
+function buildQRBlob(item) {
+  return new Promise(resolve => {
+    const host = document.createElement('div');
+    host.style.cssText = 'position:fixed;left:-9999px;top:-9999px;';
+    document.body.appendChild(host);
+    new QRCode(host, { text: item.id, width: 400, height: 400, colorDark: '#000', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.H });
+
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const srcCanvas = host.querySelector('canvas');
+      const qrSize = 500;
+      const pad = 28;
+      const W = qrSize + pad * 2;
+      const H = qrSize + pad * 2 + 84;
+
+      const out = document.createElement('canvas');
+      out.width = W; out.height = H;
+      const ctx = out.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, W, H);
+      if (srcCanvas) ctx.drawImage(srcCanvas, pad, pad, qrSize, qrSize);
+      document.body.removeChild(host);
+
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 30px -apple-system,Helvetica,Arial,sans-serif';
+      ctx.fillText(item.id, W / 2, qrSize + pad + 10);
+      ctx.font = '20px -apple-system,Helvetica,Arial,sans-serif';
+      ctx.fillStyle = '#444';
+      const name = item.name.length > 44 ? item.name.slice(0,42) + '…' : item.name;
+      ctx.fillText(name, W / 2, qrSize + pad + 50);
+
+      out.toBlob(blob => resolve(blob), 'image/png');
+    }));
+  });
+}
+
+// ── Called directly by the button tap — no await before navigator.share ──
+function triggerShare(idx) {
+  const item = equipment[idx];
+  if (!_qrBlobReady) { toast('Still preparing — try again in a moment', 'info'); return; }
+
+  const file = new File([_qrBlobReady], `QR_${item.id}.png`, { type: 'image/png' });
+
+  // navigator.share MUST be called synchronously inside a user gesture.
+  // Because _qrBlobReady was pre-built, there is no await here — this is
+  // a direct synchronous call within the tap handler, so Safari allows it.
+  if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+    navigator.share({ files: [file], title: `QR — ${item.id}` })
+      .catch(err => { if (err.name !== 'AbortError') toast('Share failed: ' + err.message, 'error'); });
+  } else {
+    // Non-iOS fallback: download
+    const url = URL.createObjectURL(_qrBlobReady);
+    const a = document.createElement('a');
+    a.href = url; a.download = `QR_${item.id}.png`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+    toast('QR downloaded ✓', 'success');
+  }
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.add('hidden');
+  document.getElementById('modalBody').innerHTML = '';
+}
+
+// ─── ADD ITEM ─────────────────────────────────────────────────────────────────
+function setFormPAT(state) {
+  formPATState = state;
+  document.getElementById('fp_tested').className = 'pat-option' + (state==='tested'?' active-tested':'');
+  document.getElementById('fp_no').className = 'pat-option' + (state==='no'?' active-no':'');
+  document.getElementById('fp_na').className = 'pat-option' + (state==='na'?' active-na':'');
+}
+
+function toggleFormLoaded() {
+  formLoaded = !formLoaded;
+  document.getElementById('f_loaded').className = 'toggle-btn ' + (formLoaded ? 'on' : 'off');
+  document.getElementById('f_loaded_lbl').textContent = formLoaded ? 'YES' : 'NO';
+}
+
+function addItem() {
+  const id = document.getElementById('f_assetId').value.trim().toUpperCase();
+  const name = document.getElementById('f_name').value.trim();
+  if (!id || !name) { toast('Asset ID and Name are required', 'error'); return; }
+  if (equipment.find(e => e.id === id)) { toast('Asset ID already exists', 'error'); return; }
+  equipment.push({
+    id, name,
+    desc: document.getElementById('f_desc').value.trim(),
+    qty: parseInt(document.getElementById('f_qty').value) || 1,
+    status: document.getElementById('f_status').value,
+    loaded: formLoaded,
+    patState: formPATState,
+    accessories: [],
+    date: new Date().toISOString(),
+  });
+  saveData();
+  clearForm();
+  toast('Added: ' + name, 'success');
+}
+
+function clearForm() {
+  ['f_assetId','f_name','f_desc'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f_qty').value = '1';
+  document.getElementById('f_status').value = 'AVAILABLE';
+  formLoaded = false;
+  document.getElementById('f_loaded').className = 'toggle-btn off';
+  document.getElementById('f_loaded_lbl').textContent = 'NO';
+  setFormPAT('na');
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+function toast(msg, type = 'info') {
+  const icons = { success:'✓', error:'✗', info:'◉' };
+  const el = document.createElement('div');
+  el.className = 'toast toast-' + type;
+  el.innerHTML = `<span>${icons[type]}</span>${msg}`;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+updateStats();
+document.getElementById('modalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
+
+</body>
+</html>
